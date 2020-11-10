@@ -16,3 +16,8 @@ Example:
 ```
 $ python generate_manifest.py my-bucket path/to/data/2020-09-24/ .xml manifest-bucket 2020-10-26_manifest.csv
 ```
+
+## Parsing Lambda Framework
+Used to create a lambda function that can both be triggered using a manifest S3 Batch (useful for catch-up) and event based trigger. 
+
+Instructions can be found inside the subdirectory [README](batch-trigger-lambda-template/README.md).

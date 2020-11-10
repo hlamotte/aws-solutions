@@ -1,0 +1,104 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  SourceBucketName:
+    Type: String
+    Default: source-bucket-name
+  TargetBucketName:
+      Type: String
+      Default: target-bucket-name
+  ParserName:
+    Type: String
+    Default: name-of-parser # string included in all created resources
+Description: AWS CloudFormation template for datalake lambda.
+Resources:
+  IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ParserName}-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+        - Effect: Allow
+          Principal:
+            Service: batchoperations.s3.amazonaws.com
+          Action: sts:AssumeRole
+  EventLambda:
+    Type: AWS::Lambda::Function
+    DependsOn:
+    - IAMRole
+    Properties:
+      FunctionName: !Sub ${ParserName}-event
+      Code:
+        ZipFile: "# Perform a cli update of the code after the initial cloudformation
+          deployment"
+      Role:
+        Fn::GetAtt:
+        - IAMRole
+        - Arn
+      Timeout: 60
+      Handler: lambda_s3_create.lambda_handler
+      Runtime: python3.7
+      MemorySize: 128
+  BatchLambda:
+    Type: AWS::Lambda::Function
+    DependsOn:
+    - IAMRole
+    Properties:
+      FunctionName: !Sub ${ParserName}-batch
+      Code:
+        ZipFile: "# Perform a cli update of the code after the initial cloudformation
+          deployment"
+      Role:
+        Fn::GetAtt:
+        - IAMRole
+        - Arn
+      Timeout: 30
+      Handler: lambda_s3_batch.lambda_handler
+      Runtime: python3.7
+      MemorySize: 128
+  IAMPolicy:
+    DependsOn:
+    - BatchLambda
+    - EventLambda
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${ParserName}-policy
+      Roles:
+      - Ref: IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource: "*"
+        - Effect: Allow
+          Action: s3:*
+          Resource:
+            !Sub arn:aws:s3:::${SourceBucketName}*
+        - Effect: Allow
+          Action: s3:*
+          Resource:
+          !Sub arn:aws:s3:::${TargetBucketName}*
+        - Effect: Allow
+          Action: lambda:*
+          Resource: "*"
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - BatchLambda
+        - Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceAccount:
+        Ref: AWS::AccountId
+      SourceArn: !Sub arn:aws:s3:::${SourceBucketName}
