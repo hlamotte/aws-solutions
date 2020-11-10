@@ -2,7 +2,13 @@
 
 ## Local development
 
-- Install the python version that you intend to use in the lambda function. \
+- Install the python version that you intend to use in the lambda function.
+- Clone this repo
+
+```
+$ cd batch-trigger-lambda-template
+```
+
 - Define your parsing process in the function `process` inside parse/parse.py
 - Create and activate virtual test environment by defining a test object in test_template.py
 - Run tests using command below
