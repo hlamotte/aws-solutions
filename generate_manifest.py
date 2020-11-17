@@ -1,4 +1,4 @@
-mport json
+import json
 import csv
 import boto3 
 import datetime
